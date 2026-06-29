@@ -4,21 +4,30 @@ A synthesized client-side utility hub for the private-test "Fling Things And Peo
 
 > Intended for owned games, private servers, and private testing. Server-authoritative behavior (damage, ownership, persistence) still depends on the game's own systems.
 
-## v3 — Persistent / Invincible survival layer
+## v4 — Modular + extreme survival layer
 
-v3 adds a "never stops" survival layer built for private testing where other testers actively try to remove you:
+The hub is now split into modules under [`modules/`](modules) for easy upgrading and fixing, loaded by [`Loader.lua`](Loader.lua). `NomNom.lua` is a thin entry shim that runs the Loader, so the original load URL keeps working.
 
-- **Invincible Gucci** — spawns a Tractor/Blobman extremely high, sits + ragdoll-desyncs into it, and a per-frame hardening loop re-anchors, re-sits, re-ragdolls and re-pins it **every frame** so it can't be destroyed, unsat, or grabbed between frames.
-- **Auto Re-Gucci recovery** — if the Gucci is ever lost, a recovery loop keeps re-finding / respawning + re-sitting **until it succeeds**, so you're never left exposed.
-- **Persistent Grab-Kill** — the kill/mark engine runs on its own loop and **keeps working while you are dead**, so a loopkill doesn't disarm you.
-- **Auto Attack Back** — on death, whoever was holding you is **marked** for the fling engine and (optionally) their Gucci is **deleted**.
-- **Steal enemy seat when un-Gucci'd** — when you have no Gucci of your own, the engine can delete a holder's Gucci so you can take their seat (same sit + ragdoll desync).
-- **Anti-loopkill** — on every respawn, active toggles (Gucci recovery, marked targets, fly, dash) re-arm themselves automatically.
-- **Spawn throttle** — all toy spawns route through one throttled queue (min gap ~0.25s) to respect the game's toy-spawn cooldown instead of spamming.
+| File | Responsibility |
+|---|---|
+| `modules/Core.lua` | services, shared state, connection/task manager, respawn-safe access, **existence-based toy spawn** (waits until the toy actually exists — no fixed delay), and the **map-bounds + extreme waypoint loop-tp engine** |
+| `modules/Gucci.lua` | invincible Gucci + **extreme map-wide loop-tp** of the toy + recovery (waypoint dodge → re-acquire → sit → verify → protect) + steal enemy seat |
+| `modules/Combat.lua` | super fling, massless, teleport/bring, predictive loop-fling, **persistent grab-kill (works while dead)** + attack-back |
+| `modules/Protection.lua` | anti grab/explode/fire/blobman/ragdoll/void/lag |
+| `modules/Misc.lua` | main, movement (fly + dash), vehicles, ESP, chat, settings |
+| `Loader.lua` | fetches the modules, builds the Rayfield UI, wires death/respawn + cleanup |
+
+### Survival behaviour
+
+- **Invincible Gucci + extreme loop-tp** — once gucci'd, the toy is teleported to a fresh random map waypoint **every frame** (re-claiming ownership each jump), so no one can steal-seat, grab, or destroy it. It stays above the void, never dropping in.
+- **Lost-Gucci recovery** — drop a waypoint, loop-tp the character around the map to dodge loopkill, re-acquire (existing → steal enemy/empty seat → else spawn own), re-sit, verify, then resume protect-by-loop-tp. Checks run on a fast cadence.
+- **Persistent grab-kill while dead** — the kill/mark engine runs on its own loop that does not stop when you die. Being killed means you lost gucci, so the killer is marked and their Gucci is deleted immediately, then killed back.
+- **Anti-loopkill on spawn** — the moment you respawn (before the character settles) the script loop-teleports you around the map via ownership to dodge an instant re-pin, then re-arms Gucci → verify → protect-by-loop-tp.
+- **Existence-based spawning** — instead of a fixed cooldown, the spawner fires and polls until the toy actually appears, which respects the game's real spawn timing.
 
 ## What it is
 
-A single standalone `.lua` script (`NomNom.lua`) loaded through an executor-style runner. It uses the Rayfield UI library and organizes every feature into 8 tabs with clean engineering throughout:
+A modular hub loaded through an executor-style runner. It uses the Rayfield UI library and organizes every feature into 8 tabs with clean engineering throughout:
 
 - **Unified connection manager** — every event connection is named and tracked, so nothing leaks.
 - **`_G` rerun cleanup** — re-running the script tears down the previous instance first (no duplicate UI, no stacked loops).
