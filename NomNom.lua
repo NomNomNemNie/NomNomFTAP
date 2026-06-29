@@ -967,7 +967,29 @@ local function startGucciHarden()
     end))
 end
 
--- Recovery loop: if gucci is lost, keep respawning + re-sitting until success.
+-- Find any Tractor/Blobman seat we could steal: an enemy's vehicle (delete +
+-- take its seat) or any unoccupied one. Returns model, seat.
+local function findStealableSeat()
+    local hum = getHum()
+    local best, bestSeat
+    for _, v in ipairs(w:GetDescendants()) do
+        if v:IsA("Model") and (v.Name == "TractorGreen" or v.Name == "CreatureBlobman") then
+            local seat = v:FindFirstChildWhichIsA("VehicleSeat", true)
+            if seat then
+                local occ = seat.Occupant
+                -- skip seats we already own/occupy
+                if occ ~= hum then
+                    -- prefer occupied-by-enemy (so we delete + steal) but also accept empty
+                    return v, seat, (occ ~= nil)
+                end
+            end
+        end
+    end
+    return best, bestSeat, false
+end
+
+-- Recovery loop: if gucci is lost, keep recovering until success.
+-- Order: steal an enemy/empty seat (if enabled), else respawn our own.
 local function startGucciRecovery()
     Tasks.GucciRecover = true
     task.spawn(function()
@@ -977,13 +999,30 @@ local function startGucciRecovery()
             local seated = model and model.Parent and seat and seat.Parent and hum and seat.Occupant == hum
             if not seated and not gucci.busy and S.GucciAutoRecover then
                 gucci.busy = true
-                -- first try to re-find an existing one, else spawn a new one
-                local nt, ns = findMyGucci()
+                local nt, ns
+                -- 1) re-find one we already own
+                nt, ns = findMyGucci()
+                -- 2) steal an enemy / empty seat if enabled (delete enemy gucci, take seat)
+                if not (nt and ns) and S.GucciStealSeat then
+                    local st, ss, occupied = findStealableSeat()
+                    if st and ss then
+                        if occupied then
+                            local destroyToy = remote({"MenuToys", "DestroyToy"})
+                            -- evict the current occupant's hold by destroying nothing of the seat
+                            -- (we re-sit ourselves; if their gucci is a separate toy, GrabKill handles it)
+                            if destroyToy then pcall(function() destroyToy:FireServer(st) end) end
+                            task.wait(0.1)
+                            -- after eviction the model may be gone; re-scan for a fresh seat
+                            st, ss = findStealableSeat()
+                        end
+                        if st and ss then nt, ns = st, ss end
+                    end
+                end
+                -- 3) fallback: spawn our own
                 if not (nt and ns) then nt, ns = spawnGucci() end
                 if nt and ns and S.Gucci then
                     gucci.model, gucci.seat = nt, ns
                     pcall(function() sitGucci(ns) end)
-                    -- watch this instance: if destroyed, loop will respawn
                     AddConn("GucciAncestry", nt.AncestryChanged:Connect(function(_, parent)
                         if not parent and S.Gucci then gucci.model = nil end
                     end))
