@@ -190,7 +190,53 @@ local function startHarden()
         if not m or not m.Parent or not s or not s.Parent then return end
         ragdollSpam(hrp, -math.huge)
         if s.Occupant ~= hum then pcall(function() s:Sit(hum) end) end
+        protectGucciModel(m, hrp)
     end))
+end
+
+-- ==========================================
+-- PROTECT a single owned gucci model every frame (from The Wourld pattern):
+--   * re-claim ownership of Head + GrabbableHitbox so it can't be stolen
+--   * if someone else became PartOwner, immediately grab it back
+--   * keep every part CanCollide=false (un-grabbable / un-collidable)
+--   * push the Head extremely high so no one can reach/sit it
+--   * if the toy gets dragged far from us, pivot it back next to us
+-- This runs alongside the extreme map loop-tp; together they make the
+-- gucci toy effectively impossible to destroy / unsit / steal.
+-- ==========================================
+function protectGucciModel(model, myHRP)
+    if not model or not model.Parent then return end
+    local head = model:FindFirstChild("Head")
+    local hitbox = model:FindFirstChild("GrabbableHitbox") or model:FindFirstChildWhichIsA("VehicleSeat", true)
+
+    -- re-claim ownership so it stays ours
+    if hitbox and hitbox:IsA("BasePart") then
+        ownToyPart(hitbox)
+        hitbox.CanTouch = true; hitbox.CanQuery = true
+    end
+
+    -- if PartOwner flipped to an enemy, grab it back immediately
+    local owner = head and head:FindFirstChild("PartOwner")
+    if owner and owner:IsA("StringValue") and owner.Value ~= "" and owner.Value ~= LP.Name then
+        if hitbox and hitbox:IsA("BasePart") then ownToyPart(hitbox)
+        elseif head and head:IsA("BasePart") then ownToyPart(head) end
+    end
+
+    -- keep everything un-collidable; push head far up so it can't be reached
+    for _, p in ipairs(model:GetDescendants()) do
+        if p:IsA("BasePart") then p.CanCollide = false end
+    end
+    if head and head:IsA("BasePart") then
+        head.CFrame = CFrame.new(head.Position.X, 1e5, head.Position.Z)
+    end
+
+    -- if dragged far away, pivot back beside us
+    local ref = head or hitbox or model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+    if myHRP and ref and ref:IsA("BasePart") then
+        if (ref.Position - myHRP.Position).Magnitude > 140 then
+            pcall(function() model:PivotTo(myHRP.CFrame * CFrame.new(0, 2, -6)) end)
+        end
+    end
 end
 
 -- ==========================================
