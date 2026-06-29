@@ -4,6 +4,18 @@ A synthesized client-side utility hub for the private-test "Fling Things And Peo
 
 > Intended for owned games, private servers, and private testing. Server-authoritative behavior (damage, ownership, persistence) still depends on the game's own systems.
 
+## v3 — Persistent / Invincible survival layer
+
+v3 adds a "never stops" survival layer built for private testing where other testers actively try to remove you:
+
+- **Invincible Gucci** — spawns a Tractor/Blobman extremely high, sits + ragdoll-desyncs into it, and a per-frame hardening loop re-anchors, re-sits, re-ragdolls and re-pins it **every frame** so it can't be destroyed, unsat, or grabbed between frames.
+- **Auto Re-Gucci recovery** — if the Gucci is ever lost, a recovery loop keeps re-finding / respawning + re-sitting **until it succeeds**, so you're never left exposed.
+- **Persistent Grab-Kill** — the kill/mark engine runs on its own loop and **keeps working while you are dead**, so a loopkill doesn't disarm you.
+- **Auto Attack Back** — on death, whoever was holding you is **marked** for the fling engine and (optionally) their Gucci is **deleted**.
+- **Steal enemy seat when un-Gucci'd** — when you have no Gucci of your own, the engine can delete a holder's Gucci so you can take their seat (same sit + ragdoll desync).
+- **Anti-loopkill** — on every respawn, active toggles (Gucci recovery, marked targets, fly, dash) re-arm themselves automatically.
+- **Spawn throttle** — all toy spawns route through one throttled queue (min gap ~0.25s) to respect the game's toy-spawn cooldown instead of spamming.
+
 ## What it is
 
 A single standalone `.lua` script (`NomNom.lua`) loaded through an executor-style runner. It uses the Rayfield UI library and organizes every feature into 8 tabs with clean engineering throughout:
