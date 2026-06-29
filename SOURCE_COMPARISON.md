@@ -1,81 +1,100 @@
-﻿# NomNom FTAP Source Comparison
+# NomNom FTAP — Source Comparison & Feature Extraction
 
-Generated from [`Source`](../Source) to compare feature families across archived Roblox/Luau scripts and guide the consolidated [`NomNom.lua`](NomNom.lua).
+A cross-script comparison of the analyzed FTAP source set, used to decide which mechanic from each script was the strongest and worth synthesizing into `NomNom.lua`. This is a benign engineering/provenance document — it records *which implementation won and why*, not operational cheat detail.
 
-## Summary
+For raw file metadata (sizes, line counts, paths), see [`SOURCE_INVENTORY.md`](SOURCE_INVENTORY.md).
 
-- Total scripts scanned: 54
-- Total bytes scanned: 18363579
-- Main repeated feature families: UI hub shell, movement/QoL, local visual debug/ESP, custom chat overlay, toy/vehicle helpers, protection toggles, and physics prototypes.
-- Consolidation target: one rerun-safe standalone client script with guarded services, tracked connections, visible toggles, cleanup, respawn handling, and no duplicate UI.
+## Scope of comparison
 
-## Per-file comparison
+The archived set (`Source/Sorce_main`, 39 files; `Source/OpenSource_6961824067`, 16 files) is dominated by large, often obfuscated, overlapping UI hubs (BlizThub, Polar, Regalic, VoidHub, OatsHub, Lunar, Sakura, Solaris, etc.). Most are repackaged variants of the same handful of mechanics behind different menu shells. Rather than merge thousands of duplicated lines, the comparison focused on the **6 readable, non-obfuscated source scripts** that each own one mechanic cleanly:
 
-| File | Bytes | Lines | Feature signals |
-|---|---:|---:|---|
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\BlizT-leaked.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CBlizT-leaked.luau) | 381818 | 8568 | UI hub/menu shell (114); Movement/QoL (226); Visual debug/ESP (250); Chat overlay (101); Protection/cleanup (33); Toy/ownership helpers (52); Vehicle/map control (148); Fling/physics prototype (147); Packed/obfuscated (3) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\division-old.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5Cdivision-old.luau) | 236 | 11 | Chat overlay (1) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\INIT-fixed.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CINIT-fixed.luau) | 313649 | 6664 | UI hub/menu shell (250); Movement/QoL (18); Visual debug/ESP (48); Chat overlay (76); Protection/cleanup (48); Toy/ownership helpers (16); Vehicle/map control (72); Fling/physics prototype (5); Packed/obfuscated (1) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\OverLoad-source.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5COverLoad-source.luau) | 22103 | 621 | UI hub/menu shell (29); Visual debug/ESP (52); Chat overlay (1); Protection/cleanup (22); Toy/ownership helpers (2); Vehicle/map control (30); Fling/physics prototype (23); Packed/obfuscated (1) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\PolarHub-leaked.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CPolarHub-leaked.luau) | 147528 | 4084 | UI hub/menu shell (50); Movement/QoL (19); Visual debug/ESP (34); Chat overlay (5); Protection/cleanup (56); Toy/ownership helpers (78); Vehicle/map control (47); Fling/physics prototype (10); Packed/obfuscated (4) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\Ragalic-leaked.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CRagalic-leaked.luau) | 125207 | 4185 | UI hub/menu shell (58); Movement/QoL (15); Visual debug/ESP (45); Chat overlay (15); Protection/cleanup (70); Toy/ownership helpers (52); Vehicle/map control (135); Fling/physics prototype (38); Packed/obfuscated (4) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\RageByte-patched.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CRageByte-patched.luau) | 80522 | 1959 | UI hub/menu shell (50); Movement/QoL (25); Visual debug/ESP (37); Protection/cleanup (15); Toy/ownership helpers (40); Vehicle/map control (16); Fling/physics prototype (30); Packed/obfuscated (1) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\TheWorst-cracked.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CTheWorst-cracked.luau) | 4074549 | 3462 | UI hub/menu shell (150); Movement/QoL (1); Visual debug/ESP (10); Chat overlay (48); Vehicle/map control (1); Packed/obfuscated (9) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\Unknown-leaked.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CUnknown-leaked.luau) | 257530 | 5806 | UI hub/menu shell (226); Movement/QoL (27); Visual debug/ESP (63); Chat overlay (91); Protection/cleanup (13); Toy/ownership helpers (41); Vehicle/map control (68); Fling/physics prototype (30); Packed/obfuscated (6) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\VaB-leaked.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CVaB-leaked.luau) | 95281 | 2892 | UI hub/menu shell (45); Movement/QoL (13); Visual debug/ESP (47); Chat overlay (15); Protection/cleanup (69); Toy/ownership helpers (38); Vehicle/map control (105); Fling/physics prototype (34); Packed/obfuscated (4) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\VHSVF-revamped.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CVHSVF-revamped.luau) | 912376 | 23832 | UI hub/menu shell (341); Movement/QoL (389); Visual debug/ESP (273); Chat overlay (357); Protection/cleanup (137); Toy/ownership helpers (25); Vehicle/map control (50); Fling/physics prototype (127); Packed/obfuscated (12) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\VoidHub-deobfuscated.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CVoidHub-deobfuscated.luau) | 507876 | 12435 | UI hub/menu shell (436); Movement/QoL (48); Visual debug/ESP (75); Chat overlay (12); Protection/cleanup (69); Toy/ownership helpers (164); Vehicle/map control (294); Fling/physics prototype (70); Packed/obfuscated (3) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\6961824067\Wexort2024-patched.luau`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5C6961824067%5CWexort2024-patched.luau) | 219852 | 6831 | UI hub/menu shell (289); Movement/QoL (126); Visual debug/ESP (42); Chat overlay (38); Protection/cleanup (80); Toy/ownership helpers (91); Vehicle/map control (214); Fling/physics prototype (61); Packed/obfuscated (5) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\Hide the body.lua`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5CHide%20the%20body.lua) | 1166 | 46 | Fling/physics prototype (1) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\Steal Anime Baddies.lua`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5CSteal%20Anime%20Baddies.lua) | 4635 | 153 | Fling/physics prototype (1) |
-| [`E:\Projects\Source\OpenSource_6961824067\Games\The Strongest Battlegrounds.lua`](../E:%5CProjects%5CSource%5COpenSource_6961824067%5CGames%5CThe%20Strongest%20Battlegrounds.lua) | 3984 | 119 | Fling/physics prototype (1) |
-| [`E:\Projects\Source\Sorce_main\1.lua`](../E:%5CProjects%5CSource%5CSorce_main%5C1.lua) | 50025 | 3 |  |
-| [`E:\Projects\Source\Sorce_main\3.lua`](../E:%5CProjects%5CSource%5CSorce_main%5C3.lua) | 269538 | 25 |  |
-| [`E:\Projects\Source\Sorce_main\BlackHub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CBlackHub.lua) | 167408 | 5270 | UI hub/menu shell (69); Movement/QoL (10); Visual debug/ESP (26); Chat overlay (4); Protection/cleanup (55); Toy/ownership helpers (87); Vehicle/map control (171); Fling/physics prototype (16); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\BlizThubOld.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CBlizThubOld.lua) | 416161 | 8571 | UI hub/menu shell (114); Movement/QoL (226); Visual debug/ESP (250); Chat overlay (101); Protection/cleanup (33); Toy/ownership helpers (52); Vehicle/map control (148); Fling/physics prototype (147); Packed/obfuscated (3) |
-| [`E:\Projects\Source\Sorce_main\BloodyPremiumOld.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CBloodyPremiumOld.lua) | 103477 | 2710 | UI hub/menu shell (58); Movement/QoL (75); Visual debug/ESP (103); Chat overlay (8); Protection/cleanup (68); Toy/ownership helpers (47); Vehicle/map control (56); Fling/physics prototype (69); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\ChatFTAP.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CChatFTAP.lua) | 19160 | 582 | Visual debug/ESP (2); Chat overlay (24); Toy/ownership helpers (2); Fling/physics prototype (2) |
-| [`E:\Projects\Source\Sorce_main\Doc\LoopFling.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CDoc%5CLoopFling.lua) | 13219 | 396 | UI hub/menu shell (6); Visual debug/ESP (1); Toy/ownership helpers (10); Fling/physics prototype (11); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\Doc\Packet.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CDoc%5CPacket.lua) | 15 | 2 |  |
-| [`E:\Projects\Source\Sorce_main\ElysiumOld.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CElysiumOld.lua) | 119251 | 2783 | UI hub/menu shell (60); Movement/QoL (4); Visual debug/ESP (1); Chat overlay (12); Protection/cleanup (5); Toy/ownership helpers (19); Vehicle/map control (36); Fling/physics prototype (34); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\Firehub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CFirehub.lua) | 116641 | 3540 | UI hub/menu shell (44); Movement/QoL (15); Visual debug/ESP (35); Chat overlay (5); Protection/cleanup (44); Toy/ownership helpers (18); Vehicle/map control (52); Fling/physics prototype (12); Packed/obfuscated (2) |
-| [`E:\Projects\Source\Sorce_main\idkisthis.lua`](../E:%5CProjects%5CSource%5CSorce_main%5Cidkisthis.lua) | 1116 | 33 |  |
-| [`E:\Projects\Source\Sorce_main\idkthishub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5Cidkthishub.lua) | 178160 | 5160 | UI hub/menu shell (48); Movement/QoL (9); Visual debug/ESP (141); Protection/cleanup (54); Toy/ownership helpers (106); Vehicle/map control (138); Fling/physics prototype (10); Packed/obfuscated (3) |
-| [`E:\Projects\Source\Sorce_main\Invisible.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CInvisible.lua) | 36916 | 1182 | UI hub/menu shell (20); Visual debug/ESP (26); Toy/ownership helpers (25); Vehicle/map control (153); Fling/physics prototype (3); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\JaposhubIDK.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CJaposhubIDK.lua) | 160708 | 4462 | UI hub/menu shell (208); Movement/QoL (29); Visual debug/ESP (3); Chat overlay (4); Protection/cleanup (65); Toy/ownership helpers (106); Vehicle/map control (86); Fling/physics prototype (2); Packed/obfuscated (3) |
-| [`E:\Projects\Source\Sorce_main\LaxHubIDKver.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CLaxHubIDKver.lua) | 142845 | 3882 | UI hub/menu shell (35); Movement/QoL (26); Visual debug/ESP (58); Protection/cleanup (102); Toy/ownership helpers (25); Vehicle/map control (117); Fling/physics prototype (19); Packed/obfuscated (5) |
-| [`E:\Projects\Source\Sorce_main\LaxHubIDKver2.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CLaxHubIDKver2.lua) | 92560 | 2534 | UI hub/menu shell (15); Movement/QoL (19); Visual debug/ESP (16); Protection/cleanup (76); Toy/ownership helpers (51); Vehicle/map control (155); Fling/physics prototype (8); Packed/obfuscated (3) |
-| [`E:\Projects\Source\Sorce_main\LaxHubIDKver3.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CLaxHubIDKver3.lua) | 32680 | 1228 | UI hub/menu shell (35); Movement/QoL (7); Visual debug/ESP (5); Protection/cleanup (23); Toy/ownership helpers (5); Vehicle/map control (6); Fling/physics prototype (4); Packed/obfuscated (4) |
-| [`E:\Projects\Source\Sorce_main\LaxIDKver4.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CLaxIDKver4.lua) | 32106 | 1171 | UI hub/menu shell (43); Movement/QoL (6); Visual debug/ESP (11); Protection/cleanup (28); Toy/ownership helpers (9); Vehicle/map control (5); Fling/physics prototype (4); Packed/obfuscated (4) |
-| [`E:\Projects\Source\Sorce_main\LaxObf.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CLaxObf.lua) | 128338 | 2 | Packed/obfuscated (2) |
-| [`E:\Projects\Source\Sorce_main\Lunar.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CLunar.lua) | 149419 | 4747 | UI hub/menu shell (8); Movement/QoL (19); Visual debug/ESP (46); Chat overlay (9); Protection/cleanup (89); Toy/ownership helpers (62); Vehicle/map control (163); Fling/physics prototype (43); Packed/obfuscated (4) |
-| [`E:\Projects\Source\Sorce_main\mentahub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5Cmentahub.lua) | 123465 | 3664 | UI hub/menu shell (46); Movement/QoL (13); Visual debug/ESP (54); Chat overlay (30); Protection/cleanup (72); Toy/ownership helpers (44); Vehicle/map control (100); Fling/physics prototype (34); Packed/obfuscated (4) |
-| [`E:\Projects\Source\Sorce_main\NEXXO.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CNEXXO.lua) | 105318 | 2403 | UI hub/menu shell (85); Movement/QoL (30); Chat overlay (27); Protection/cleanup (17); Toy/ownership helpers (120); Vehicle/map control (22); Fling/physics prototype (12); Packed/obfuscated (7) |
-| [`E:\Projects\Source\Sorce_main\OatsHub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5COatsHub.lua) | 502453 | 14014 | UI hub/menu shell (309); Movement/QoL (176); Visual debug/ESP (51); Chat overlay (22); Protection/cleanup (101); Toy/ownership helpers (273); Vehicle/map control (324); Fling/physics prototype (64); Packed/obfuscated (7) |
-| [`E:\Projects\Source\Sorce_main\Polar.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CPolar.lua) | 147528 | 4084 | UI hub/menu shell (50); Movement/QoL (19); Visual debug/ESP (34); Chat overlay (5); Protection/cleanup (56); Toy/ownership helpers (78); Vehicle/map control (47); Fling/physics prototype (10); Packed/obfuscated (4) |
-| [`E:\Projects\Source\Sorce_main\PolarDump.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CPolarDump.lua) | 2452680 | 60861 | UI hub/menu shell (62); Movement/QoL (10); Visual debug/ESP (5); Chat overlay (1); Protection/cleanup (10); Toy/ownership helpers (21); Vehicle/map control (27); Fling/physics prototype (1); Packed/obfuscated (5) |
-| [`E:\Projects\Source\Sorce_main\PosralOld.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CPosralOld.lua) | 104634 | 2606 | UI hub/menu shell (55); Movement/QoL (4); Visual debug/ESP (14); Chat overlay (7); Protection/cleanup (22); Toy/ownership helpers (48); Vehicle/map control (120); Fling/physics prototype (5); Packed/obfuscated (5) |
-| [`E:\Projects\Source\Sorce_main\Regalic.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CRegalic.lua) | 125296 | 4191 | UI hub/menu shell (58); Movement/QoL (15); Visual debug/ESP (45); Chat overlay (15); Protection/cleanup (70); Toy/ownership helpers (52); Vehicle/map control (135); Fling/physics prototype (38); Packed/obfuscated (4) |
-| [`E:\Projects\Source\Sorce_main\RussianIDK.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CRussianIDK.lua) | 119996 | 2712 | Movement/QoL (84); Visual debug/ESP (49); Protection/cleanup (31); Toy/ownership helpers (1); Vehicle/map control (2); Fling/physics prototype (53) |
-| [`E:\Projects\Source\Sorce_main\Sakura.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CSakura.lua) | 202484 | 4013 | UI hub/menu shell (111); Movement/QoL (60); Visual debug/ESP (302); Chat overlay (1); Toy/ownership helpers (14); Vehicle/map control (7); Fling/physics prototype (5); Packed/obfuscated (2) |
-| [`E:\Projects\Source\Sorce_main\Solaris.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CSolaris.lua) | 196042 | 5631 | UI hub/menu shell (112); Movement/QoL (146); Visual debug/ESP (124); Chat overlay (2); Protection/cleanup (43); Toy/ownership helpers (75); Vehicle/map control (523); Fling/physics prototype (5); Packed/obfuscated (2) |
-| [`E:\Projects\Source\Sorce_main\TheWorst.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CTheWorst.lua) | 4074549 | 3462 | UI hub/menu shell (150); Movement/QoL (1); Visual debug/ESP (10); Chat overlay (48); Vehicle/map control (1); Packed/obfuscated (9) |
-| [`E:\Projects\Source\Sorce_main\tw.lua`](../E:%5CProjects%5CSource%5CSorce_main%5Ctw.lua) | 4440 | 136 | UI hub/menu shell (17); Movement/QoL (14); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\UFO.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CUFO.lua) | 8647 | 276 | UI hub/menu shell (14); Visual debug/ESP (2); Toy/ownership helpers (12); Vehicle/map control (47); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\VerbalminiLeak.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CVerbalminiLeak.lua) | 14408 | 484 | UI hub/menu shell (12); Movement/QoL (4); Toy/ownership helpers (7); Packed/obfuscated (1) |
-| [`E:\Projects\Source\Sorce_main\VHCKskid.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CVHCKskid.lua) | 6013 | 181 | UI hub/menu shell (26); Movement/QoL (1); Vehicle/map control (2); Packed/obfuscated (17) |
-| [`E:\Projects\Source\Sorce_main\VoidHub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CVoidHub.lua) | 507876 | 12435 | UI hub/menu shell (436); Movement/QoL (48); Visual debug/ESP (75); Chat overlay (12); Protection/cleanup (69); Toy/ownership helpers (164); Vehicle/map control (294); Fling/physics prototype (70); Packed/obfuscated (3) |
-| [`E:\Projects\Source\Sorce_main\WexortPatch.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CWexortPatch.lua) | 155591 | 5117 | UI hub/menu shell (146); Movement/QoL (126); Visual debug/ESP (35); Chat overlay (3); Protection/cleanup (80); Toy/ownership helpers (91); Vehicle/map control (214); Fling/physics prototype (61); Packed/obfuscated (6) |
-| [`E:\Projects\Source\Sorce_main\ZeeHub.lua`](../E:%5CProjects%5CSource%5CSorce_main%5CZeeHub.lua) | 134104 | 3045 | Movement/QoL (6); Visual debug/ESP (215); Chat overlay (31); Protection/cleanup (13); Fling/physics prototype (174); Packed/obfuscated (187) |
+| Source script | Readable | Primary mechanic | UI lib |
+|---|---|---|---|
+| `OpenSource/.../The Strongest Battlegrounds.lua` | yes | dash velocity multiplier + free-jump | none |
+| `OpenSource/.../OverLoad-source.luau` | yes | protection suite + ESP + blobman | Rayfield |
+| `Sorce_main/Doc/LoopFling.lua` | yes | predictive loop fling engine | Orion |
+| `Sorce_main/UFO.lua` | yes | vehicle hijack + massless + hitbox | Rayfield |
+| `Sorce_main/VerbalminiLeak.lua` | yes (deminified) | teleport-grab / stack / loop-bring | Orion |
+| `Sorce_main/ChatFTAP.lua` | yes | custom chat over ExtendGrabLine | custom GUI |
 
-## Extracted tinh túy
+The large hubs were treated as archival duplicates — every distinctive feature they expose is a noisier version of one of the six above.
 
-- Prefer a single UI framework path instead of mixing Orion/Rayfield shells.
-- Keep a global rerun cleanup key so rerunning destroys old GUI, visuals, physics movers, and connections.
-- Centralize character access helpers and respawn reapply logic.
-- Use throttle/cooldown values on loops instead of unbounded per-frame remote spam.
-- Store every connection/instance/task in state tables and clean them on disable.
-- Keep ESP/debug visuals local and refreshable, with distance/name options.
-- Keep chat overlay bounded to a message cap, draggable, and toggleable.
-- Keep vehicle/toy helpers guarded with path checks and notifications when map objects are missing.
+## Feature-by-feature comparison
 
+### Fling
+
+| Implementation | Approach | Verdict |
+|---|---|---|
+| OverLoad Super Fling | One-shot `BodyVelocity` on grab release, camera LookVector * strength | **Kept** — clean, event-driven, good for manual fling |
+| LoopFling | Decoy-toy possession, velocity-history flung detection, lead prediction, raycast LOS, ownership monitor, auto target rotation | **Kept as the loop engine** — by far the most sophisticated; the others are crude single-target versions |
+| Hub variants (Polar/Bliz/etc.) | Repackaged loop-fling with extra toggles | Discarded as duplicates |
+
+Decision: keep **both** — OverLoad for manual "Super Fling", LoopFling for the automated engine. They serve different intents and don't conflict.
+
+### Protection (anti-systems)
+
+| Source | Anti features | Verdict |
+|---|---|---|
+| OverLoad | Grab (IsHeld + Struggle spam while anchored), Explode, Fire, Blobman, Lag | **Kept** — cleanest, smallest, each is a focused toggle |
+| Invisible.lua / hubs | Tractor/Blobman "Gucci" invisibility (very long, fragile, many stale connections) | **Dropped from v2** — high complexity, leak-prone respawn chains; OverLoad's lighter anti-grab covers the real need |
+
+Decision: take OverLoad's anti-suite, add Anti Ragdoll and Anti Void as small additional guards. Skip the heavy Gucci/Tractor invisibility setup to keep the hub stable and leak-free.
+
+### ESP
+
+| Source | Approach | Verdict |
+|---|---|---|
+| OverLoad | Highlight + circular headshot + name label + rainbow update loop, force-refresh, per-player CharacterAdded re-apply | **Kept** — the most complete and the only one with a refresh path |
+| Hub ESP variants | Drawing-based or simpler highlight-only | Discarded |
+
+Decision: OverLoad ESP wins outright. Renamed instances to `NomNom_ESP` / `NomNom_Tag` so cleanup can find and destroy them.
+
+### Movement
+
+| Source | Approach | Verdict |
+|---|---|---|
+| TSB | Dash `dodgevelocity` multiplier + remove `NoJump` accessory (free jump) | **Kept** — the only genuine movement-combat mechanic in the set |
+| (none had a clean fly) | — | **Added new** camera-relative BodyVelocity+BodyGyro fly, since no source had a clean one |
+
+### Teleport / bring
+
+| Source | Approach | Verdict |
+|---|---|---|
+| VerbalminiLeak | Teleport-grab single (mouse target), Stack mode, Loop bring with all/nearby/whitelist modes, hold-to-keep Heartbeat | **Kept** — most complete bring system |
+| Hub variants | Subsets of the above | Discarded |
+
+Decision: VerbalminiLeak's design, rewritten with the unified connection manager and a shared `collectTargets()` instead of its deminified spaghetti control flow.
+
+### Vehicles
+
+| Source | Approach | Verdict |
+|---|---|---|
+| UFO.lua | Sticky-shuriken hijack of Outer/Inner UFO, Train, CaveCart + UFO hitbox spin/follow + massless grab | **Kept** — sole owner of vehicle + massless mechanics |
+
+### Chat
+
+| Source | Approach | Verdict |
+|---|---|---|
+| ChatFTAP | Custom draggable chat GUI, message routing through `ExtendGrabLine` remote, sliding notifications | **Kept** — message routing preserved; the separate sliding-notification engine dropped in favor of Rayfield's built-in `Notify` to avoid a second UI system |
+
+## Synthesis decisions (what `NomNom.lua` actually does)
+
+1. **One UI system** — standardized on Rayfield (used by OverLoad + UFO). Dropped Orion (LoopFling/Verbal) and the bespoke ChatFTAP notification engine to avoid three competing UI libs.
+2. **One connection manager** — every source managed connections differently (raw locals, `getgenv()`, ad-hoc disconnects). Replaced all of it with a single named `Connections` table + `Tasks` flags.
+3. **One cleanup path** — none of the sources had full teardown. Added `_G.NomNomFTAP.Cleanup()` that stops loops, releases grabbed players, destroys ESP/chat instances, disconnects everything, and destroys the UI.
+4. **Respawn safety** — sources used cached `char`/`root` that went stale on death. Replaced with fresh `getChar/getHRP/getHum` lookups + a `CharacterAdded` re-apply for fly and dash.
+5. **Guarded remotes** — every game-specific remote now resolves through a `remote({path})` helper that no-ops if the game differs, instead of erroring on a missing `rs.GrabEvents.X`.
+6. **Dropped** — heavy Gucci/Tractor invisibility, duplicate hub mechanics, Orion-specific dropdowns, and the second notification engine.
+
+## Result
+
+| Tab | Winning source(s) |
+|---|---|
+| Main | common (walkspeed/jump/infjump/teleport) |
+| Movement | TSB + new fly |
+| Combat | OverLoad (super fling) + UFO (massless) + Verbal (bring) + LoopFling (engine) |
+| Protection | OverLoad (+ added anti-ragdoll/void) |
+| Vehicles | UFO |
+| ESP | OverLoad |
+| Chat | ChatFTAP |
+| Settings | new (whitelist + unload) |
