@@ -1,100 +1,50 @@
-# NomNom FTAP — Source Comparison & Feature Extraction
+# Source/Strong Comparison & Merge Report
 
-A cross-script comparison of the analyzed FTAP source set, used to decide which mechanic from each script was the strongest and worth synthesizing into `NomNom.lua`. This is a benign engineering/provenance document — it records *which implementation won and why*, not operational cheat detail.
+Four scripts target the same grab/fling Roblox game family (shared remotes: `GrabEvents.SetNetworkOwner`, `CreatureBlobman`, `MenuToys.SpawnToyRemoteFunction`, `NinjaShuriken` anti-kick).
 
-For raw file metadata (sizes, line counts, paths), see [`SOURCE_INVENTORY.md`](SOURCE_INVENTORY.md).
+## Per-script inventory
 
-## Scope of comparison
+### The Wourld
 
-The archived set (`Source/Sorce_main`, 39 files; `Source/OpenSource_6961824067`, 16 files) is dominated by large, often obfuscated, overlapping UI hubs (BlizThub, Polar, Regalic, VoidHub, OatsHub, Lunar, Sakura, Solaris, etc.). Most are repackaged variants of the same handful of mechanics behind different menu shells. Rather than merge thousands of duplicated lines, the comparison focused on the **6 readable, non-obfuscated source scripts** that each own one mechanic cleanly:
+- Size: 440866 chars / 5 lines, 1620 functions
+- UI: 152 toggles, 64 sliders, 26 dropdowns, 67 buttons, 14 keybinds
+- Features: Aura(306), Blob(204), AntiKick(192), Music(152), Config(142), Trail(118), Highlight(99), Gucci(97), KickAura(58), Fling(57), GrabLine(55), Skybox(47), Theme(46), Speed(45), Ownership(44), Teleport(41), Rejoin(39), Camera(36), Noclip(34), AntiGrab(33), Username(31), Hitbox(26), PacketLag(24), BuildPreset(22), ESP(21), Backtrack(18), LoopExplosion(17), InfiniteJump(16), AntiExplosion(15), TP(15), Trace(12), HomeGuard(11), Spinbot(10), AntiBurn(8), TriggerBot(8), Kick All(7), AntiAfk(6), Bypass(5), AntiVoid(4), FOV(2)
 
-| Source script | Readable | Primary mechanic | UI lib |
-|---|---|---|---|
-| `OpenSource/.../The Strongest Battlegrounds.lua` | yes | dash velocity multiplier + free-jump | none |
-| `OpenSource/.../OverLoad-source.luau` | yes | protection suite + ESP + blobman | Rayfield |
-| `Sorce_main/Doc/LoopFling.lua` | yes | predictive loop fling engine | Orion |
-| `Sorce_main/UFO.lua` | yes | vehicle hijack + massless + hitbox | Rayfield |
-| `Sorce_main/VerbalminiLeak.lua` | yes (deminified) | teleport-grab / stack / loop-bring | Orion |
-| `Sorce_main/ChatFTAP.lua` | yes | custom chat over ExtendGrabLine | custom GUI |
+### XOCO
 
-The large hubs were treated as archival duplicates — every distinctive feature they expose is a noisier version of one of the six above.
+- Size: 403057 chars / 9946 lines, 660 functions
+- UI: 0 toggles, 0 sliders, 0 dropdowns, 0 buttons, 0 keybinds
+- Features: Blob(187), Gucci(125), Aura(109), Trail(99), Camera(50), Skybox(45), AntiKick(42), Fling(37), GrabLine(35), Config(34), Speed(31), AntiGrab(29), ESP(21), TP(19), Ownership(16), Teleport(14), Fly(13), Theme(8), KickAura(7), PacketLag(5), Highlight(4), FOV(4), Hitbox(3), Username(2)
 
-## Feature-by-feature comparison
+### NoName
 
-### Fling
+- Size: 235889 chars / 5459 lines, 318 functions
+- UI: 67 toggles, 25 sliders, 12 dropdowns, 29 buttons, 0 keybinds
+- Features: Blob(98), AntiKick(65), Gucci(42), ESP(38), Config(27), GrabLine(25), Aura(16), Fling(14), Speed(12), Camera(12), AntiGrab(11), AntiBurn(10), Teleport(9), TP(6), AntiVoid(5), Highlight(4), Hitbox(4), FOV(3), Bypass(3), KickAura(2), Username(1), Fly(1)
 
-| Implementation | Approach | Verdict |
-|---|---|---|
-| OverLoad Super Fling | One-shot `BodyVelocity` on grab release, camera LookVector * strength | **Kept** — clean, event-driven, good for manual fling |
-| LoopFling | Decoy-toy possession, velocity-history flung detection, lead prediction, raycast LOS, ownership monitor, auto target rotation | **Kept as the loop engine** — by far the most sophisticated; the others are crude single-target versions |
-| Hub variants (Polar/Bliz/etc.) | Repackaged loop-fling with extra toggles | Discarded as duplicates |
+### NoName-Apple
 
-Decision: keep **both** — OverLoad for manual "Super Fling", LoopFling for the automated engine. They serve different intents and don't conflict.
+- Size: 96535 chars / 2485 lines, 152 functions
+- UI: 26 toggles, 4 sliders, 1 dropdowns, 9 buttons, 1 keybinds
+- Features: Blob(78), Camera(27), ESP(21), Gucci(20), Fly(16), GrabLine(12), AntiKick(10), Speed(7), Theme(6), Highlight(4), FOV(3), Bypass(3), TP(2), Config(2), AntiGrab(1), AntiExplosion(1), AntiBurn(1), AntiVoid(1), Trail(1)
 
-### Protection (anti-systems)
+## Merge decision
 
-| Source | Anti features | Verdict |
-|---|---|---|
-| OverLoad | Grab (IsHeld + Struggle spam while anchored), Explode, Fire, Blobman, Lag | **Kept** — cleanest, smallest, each is a focused toggle |
-| Invisible.lua / hubs | Tractor/Blobman "Gucci" invisibility (very long, fragile, many stale connections) | **Dropped from v2** — high complexity, leak-prone respawn chains; OverLoad's lighter anti-grab covers the real need |
+`The Wourld` is the canonical base: most complete UI (Obsidian/Linoria compat, 9 tabs, theme + config manager, music player, build presets) and the largest feature set. The other three are feature subsets of the same game, so their essence is preserved by the base; unique extras are noted below.
 
-Decision: take OverLoad's anti-suite, add Anti Ragdoll and Anti Void as small additional guards. Skip the heavy Gucci/Tractor invisibility setup to keep the hub stable and leak-free.
+### Unique/notable per script
 
-### ESP
+- **NoName** (5459 lines, OrionLib hints): broad toggle set, `createLagWithGrabLine`, paint-part tools.
+- **NoName-Apple** (2457 lines): TriggerBot + Fly focus, box ESP, camera tools.
+- **XOCO** (9949 lines): AntiGucciTrain, Type1 ragdoll spam, strong anti-grab/anti-ragdoll pipeline.
 
-| Source | Approach | Verdict |
-|---|---|---|
-| OverLoad | Highlight + circular headshot + name label + rainbow update loop, force-refresh, per-player CharacterAdded re-apply | **Kept** — the most complete and the only one with a refresh path |
-| Hub ESP variants | Drawing-based or simpler highlight-only | Discarded |
+All overlapping mechanics (anti-kick, kick methods, blob kick/kill, gucci, grab/line mods, ESP/visuals, server lag, owner tools) exist in the base.
 
-Decision: OverLoad ESP wins outright. Renamed instances to `NomNom_ESP` / `NomNom_Tag` so cleanup can find and destroy them.
+## Fixes applied (all 4 scripts)
 
-### Movement
+- **The Wourld**: no deprecated calls. Tight `while true do` loops: 4.
+- **XOCO**: wait()->task.wait(): 2; spawn()->task.spawn(): 1. Tight `while true do` loops: 5.
+- **NoName**: wait()->task.wait(): 4. Tight `while true do` loops: 1.
+- **NoName-Apple**: no deprecated calls. Tight `while true do` loops: 0.
 
-| Source | Approach | Verdict |
-|---|---|---|
-| TSB | Dash `dodgevelocity` multiplier + remove `NoJump` accessory (free jump) | **Kept** — the only genuine movement-combat mechanic in the set |
-| (none had a clean fly) | — | **Added new** camera-relative BodyVelocity+BodyGyro fly, since no source had a clean one |
-
-### Teleport / bring
-
-| Source | Approach | Verdict |
-|---|---|---|
-| VerbalminiLeak | Teleport-grab single (mouse target), Stack mode, Loop bring with all/nearby/whitelist modes, hold-to-keep Heartbeat | **Kept** — most complete bring system |
-| Hub variants | Subsets of the above | Discarded |
-
-Decision: VerbalminiLeak's design, rewritten with the unified connection manager and a shared `collectTargets()` instead of its deminified spaghetti control flow.
-
-### Vehicles
-
-| Source | Approach | Verdict |
-|---|---|---|
-| UFO.lua | Sticky-shuriken hijack of Outer/Inner UFO, Train, CaveCart + UFO hitbox spin/follow + massless grab | **Kept** — sole owner of vehicle + massless mechanics |
-
-### Chat
-
-| Source | Approach | Verdict |
-|---|---|---|
-| ChatFTAP | Custom draggable chat GUI, message routing through `ExtendGrabLine` remote, sliding notifications | **Kept** — message routing preserved; the separate sliding-notification engine dropped in favor of Rayfield's built-in `Notify` to avoid a second UI system |
-
-## Synthesis decisions (what `NomNom.lua` actually does)
-
-1. **One UI system** — standardized on Rayfield (used by OverLoad + UFO). Dropped Orion (LoopFling/Verbal) and the bespoke ChatFTAP notification engine to avoid three competing UI libs.
-2. **One connection manager** — every source managed connections differently (raw locals, `getgenv()`, ad-hoc disconnects). Replaced all of it with a single named `Connections` table + `Tasks` flags.
-3. **One cleanup path** — none of the sources had full teardown. Added `_G.NomNomFTAP.Cleanup()` that stops loops, releases grabbed players, destroys ESP/chat instances, disconnects everything, and destroys the UI.
-4. **Respawn safety** — sources used cached `char`/`root` that went stale on death. Replaced with fresh `getChar/getHRP/getHum` lookups + a `CharacterAdded` re-apply for fly and dash.
-5. **Guarded remotes** — every game-specific remote now resolves through a `remote({path})` helper that no-ops if the game differs, instead of erroring on a missing `rs.GrabEvents.X`.
-6. **Dropped** — heavy Gucci/Tractor invisibility, duplicate hub mechanics, Orion-specific dropdowns, and the second notification engine.
-
-## Result
-
-| Tab | Winning source(s) |
-|---|---|
-| Main | common (walkspeed/jump/infjump/teleport) |
-| Movement | TSB + new fly |
-| Combat | OverLoad (super fling) + UFO (massless) + Verbal (bring) + LoopFling (engine) |
-| Protection | OverLoad (+ added anti-ragdoll/void) |
-| Vehicles | UFO |
-| ESP | OverLoad |
-| Chat | ChatFTAP |
-| Settings | new (whitelist + unload) |
+Fixed copies written to `_fixed_sources/`.
