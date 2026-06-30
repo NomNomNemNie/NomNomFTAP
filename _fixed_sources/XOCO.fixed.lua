@@ -1052,9 +1052,9 @@ local function antiExplodeF()
 			local mag = (model.Position - hrp.Position).Magnitude
 			if mag <= 20 then
 				hrp.Anchored = true
-				task.wait(0.01)
+				wait(0.01)
 				while char["Right Arm"].RagdollLimbPart.CanCollide do
-					task.wait(0.001)
+					wait(0.001)
 				end
 				hrp.Anchored = false
 			end
@@ -1899,7 +1899,7 @@ DefenseExtra:CreateToggle({
                         pal2 = nil
                     end
                 end)
-                task.spawn(function()
+                spawn(function()
                     task.wait(1)
 					if pal and pal:FindFirstChild("ViewItemButton") then
 						local mess = pal.ViewItemButton:FindFirstChild("NewMessage")
@@ -7862,216 +7862,159 @@ KeybindsGroup:CreateKeybind({
 		local targetPos = Mouse.Hit.Position
 		hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
 	end
-})
+});
 -- =========================================================================
--- LOOPGRAB POSE [DOG] (INTEGRATED INTO KEYBINDSGROUP)
+-- LOOPGRAB POSE [DOG] (FUNCTION-SCOPED TO AVOID LOCAL REGISTER LIMIT)
 -- =========================================================================
-do
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local LocalPlayer = Players.LocalPlayer
+local function xocoDogPoseQuickFix()
+    local dogState = {
+        Active = false,
+        Connection = nil,
+        Target = nil,
+    }
 
-    local loopGrabDogActive = false
-    local LoopGrabDogConn = nil
-    local SpamChar = nil
+    local dogPlayers = game:GetService("Players")
+    local dogRunService = game:GetService("RunService")
+    local dogReplicatedStorage = game:GetService("ReplicatedStorage")
+    local dogLocalPlayer = dogPlayers.LocalPlayer
 
-    local function stopDogPose()
-        loopGrabDogActive = false
-        if LoopGrabDogConn then
-            LoopGrabDogConn:Disconnect()
-            LoopGrabDogConn = nil
+    local function restoreDogCharacter(character)
+        if not character or not character.Parent then
+            return
         end
-        
-        -- Restore collisions and velocities
-        if SpamChar and SpamChar.Parent and SpamChar:FindFirstChild("Head") then 
-            for _, v in pairs(SpamChar:GetChildren()) do 
-                if v:IsA("BasePart") then 
-                    v.AssemblyLinearVelocity = Vector3.zero
-                    v.AssemblyAngularVelocity = Vector3.zero
-                    v.CanCollide = true
-                end
+
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.AssemblyLinearVelocity = Vector3.zero
+                part.AssemblyAngularVelocity = Vector3.zero
+                part.CanCollide = true
             end
         end
-        SpamChar = nil
+    end
+
+    local function stopDogPose()
+        dogState.Active = false
+        if dogState.Connection then
+            dogState.Connection:Disconnect()
+            dogState.Connection = nil
+        end
+        restoreDogCharacter(dogState.Target)
+        dogState.Target = nil
+    end
+
+    local function resolveDogTarget()
+        local mouse = dogLocalPlayer:GetMouse()
+        local hitPart = mouse and mouse.Target
+        local character = hitPart and hitPart.Parent
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local torso = character and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
+        local head = character and character:FindFirstChild("Head")
+
+        if not (character and humanoid and torso and head) then
+            return nil, nil, nil, nil
+        end
+
+        return character, torso, head, humanoid
+    end
+
+    local function applyDogPose(character, torso, head, humanoid, hrp, snoRemote)
+        if snoRemote and head then
+            pcall(function()
+                snoRemote:FireServer(head, head.CFrame)
+            end)
+        end
+
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+
+        humanoid.Health = 100
+        torso.CFrame = hrp.CFrame * CFrame.new(0, -1.2, -2.5) * CFrame.Angles(math.rad(-90), 0, 0)
+        head.CFrame = torso.CFrame * CFrame.new(0, 1.3, -0.2) * CFrame.Angles(math.rad(45), 0, 0)
+
+        local limbs = {
+            {"Left Arm", CFrame.new(-0.8, 0.5, 0.5), CFrame.Angles(math.rad(90), 0, math.rad(20))},
+            {"Right Arm", CFrame.new(0.8, 0.5, 0.5), CFrame.Angles(math.rad(90), 0, math.rad(-20))},
+            {"Left Leg", CFrame.new(-0.6, -1.2, 0.5), CFrame.Angles(math.rad(90), 0, math.rad(10))},
+            {"Right Leg", CFrame.new(0.6, -1.2, 0.5), CFrame.Angles(math.rad(90), 0, math.rad(-10))},
+        }
+
+        for _, limbData in ipairs(limbs) do
+            local limb = character:FindFirstChild(limbData[1])
+            if limb then
+                limb.CFrame = torso.CFrame * limbData[2] * limbData[3]
+            end
+        end
     end
 
     local function startDogPose()
-        local Mouse = LocalPlayer:GetMouse()
-        local target = Mouse.Target
-        if not target then 
-            Library:Notify({ Title = "System", Content = "No target found under mouse!", Duration = 3 })
-            return 
+        local character = resolveDogTarget()
+        if not character then
+            if Library and Library.Notify then
+                Library:Notify({ Title = "System", Content = "Invalid character target!", Duration = 3 })
+            end
+            return
         end
-        
-        SpamChar = target.Parent
-        local Head = SpamChar:FindFirstChild("Head")
-        local Torso = SpamChar:FindFirstChild("Torso") or SpamChar:FindFirstChild("UpperTorso")
-        local Hum = SpamChar:FindFirstChildOfClass("Humanoid")
-        
-        if not (Torso and Head and Hum) then 
-            SpamChar = nil
-            Library:Notify({ Title = "System", Content = "Invalid character target!", Duration = 3 })
-            return 
-        end
-        
-        loopGrabDogActive = true
-        local snoRemote = ReplicatedStorage:WaitForChild("GrabEvents", 5) and ReplicatedStorage.GrabEvents:FindFirstChild("SetNetworkOwner")
-        local myChar = LocalPlayer.Character
-        local hrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-        
-        Library:Notify({ Title = "Dog Pose", Content = "Locked onto " .. SpamChar.Name, Duration = 3 })
 
-        LoopGrabDogConn = RunService.Heartbeat:Connect(function()
-            if not loopGrabDogActive or not hrp or not SpamChar or not SpamChar.Parent then
+        local localCharacter = dogLocalPlayer.Character
+        local hrp = localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            return
+        end
+
+        local grabEvents = dogReplicatedStorage:FindFirstChild("GrabEvents")
+        local snoRemote = grabEvents and grabEvents:FindFirstChild("SetNetworkOwner")
+
+        dogState.Target = character
+        dogState.Active = true
+        if Library and Library.Notify then
+            Library:Notify({ Title = "Dog Pose", Content = "Locked onto " .. character.Name, Duration = 3 })
+        end
+
+        dogState.Connection = dogRunService.Heartbeat:Connect(function()
+            local target = dogState.Target
+            if not dogState.Active or not target or not target.Parent or not hrp.Parent then
                 stopDogPose()
                 return
             end
-            
-            Torso = SpamChar:FindFirstChild("Torso") or SpamChar:FindFirstChild("UpperTorso")
-            Head = SpamChar:FindFirstChild("Head")
-            if not Torso or not Head then 
+
+            local liveTorso = target:FindFirstChild("Torso") or target:FindFirstChild("UpperTorso")
+            local liveHead = target:FindFirstChild("Head")
+            local liveHumanoid = target:FindFirstChildOfClass("Humanoid")
+            if not (liveTorso and liveHead and liveHumanoid) then
                 stopDogPose()
-                return 
+                return
             end
-            
-            -- Claim Network Ownership
-            if snoRemote then
-                pcall(function() snoRemote:FireServer(Head, Head.CFrame) end)
-            end
-            
-            -- Ghosting collisions
-            for _, x in pairs(SpamChar:GetDescendants()) do 
-                if x:IsA("BasePart") then 
-                    x.CanCollide = false
-                end
-            end
-            
-            Hum.Health = 100 -- Prevent dying from physics glitches
-            
-            -- Force Dog Pose CFrames relative to your HRP
-            Torso.CFrame = hrp.CFrame * CFrame.new(0, -1, -2) * CFrame.Angles(math.rad(-90), 0, math.rad(180))
-            Head.CFrame = Torso.CFrame * CFrame.new(0, 1, 0) * CFrame.Angles(math.rad(90), 0, 0)
-            
-            local lArm = SpamChar:FindFirstChild("Left Arm")
-            if lArm then lArm.CFrame = Torso.CFrame * CFrame.new(-1, 0.5, 0) * CFrame.Angles(math.rad(60), 0, math.rad(-30)) end
-            
-            local rArm = SpamChar:FindFirstChild("Right Arm")
-            if rArm then rArm.CFrame = Torso.CFrame * CFrame.new(1, 0.5, 0) * CFrame.Angles(math.rad(60), 0, math.rad(30)) end
-            
-            local lLeg = SpamChar:FindFirstChild("Left Leg")
-            if lLeg then lLeg.CFrame = Torso.CFrame * CFrame.new(-0.5, -1, 0) * CFrame.Angles(math.rad(40), 0, 0) end
-            
-            local rLeg = SpamChar:FindFirstChild("Right Leg")
-            if rLeg then rLeg.CFrame = Torso.CFrame * CFrame.new(0.5, -1, 0) * CFrame.Angles(math.rad(40), 0, 0) end
-        end)
-    end
--- =========================================================================
--- LOOPGRAB POSE [DOG] (REFINED ANATOMY)
--- =========================================================================
-do
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local LocalPlayer = Players.LocalPlayer
 
-    local loopGrabDogActive = false
-    local LoopGrabDogConn = nil
-    local SpamChar = nil
-
-    local function stopDogPose()
-        loopGrabDogActive = false
-        if LoopGrabDogConn then
-            LoopGrabDogConn:Disconnect()
-            LoopGrabDogConn = nil
-        end
-        if SpamChar and SpamChar.Parent then 
-            for _, v in pairs(SpamChar:GetDescendants()) do 
-                if v:IsA("BasePart") then 
-                    v.AssemblyLinearVelocity = Vector3.zero
-                    v.CanCollide = true
-                end
-            end
-        end
-        SpamChar = nil
-    end
-
-    local function startDogPose()
-        local Mouse = LocalPlayer:GetMouse()
-        local target = Mouse.Target
-        if not target or not target.Parent:FindFirstChild("Humanoid") then return end
-        
-        SpamChar = target.Parent
-        loopGrabDogActive = true
-        
-        local snoRemote = ReplicatedStorage:FindFirstChild("GrabEvents") and ReplicatedStorage.GrabEvents:FindFirstChild("SetNetworkOwner")
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
-        LoopGrabDogConn = RunService.Heartbeat:Connect(function()
-            if not loopGrabDogActive or not hrp or not SpamChar:FindFirstChild("Torso") then stopDogPose() return end
-            
-            local Torso = SpamChar.Torso
-            local Head = SpamChar:FindFirstChild("Head")
-            
-            -- Network Ownership
-            if snoRemote then pcall(function() snoRemote:FireServer(Head, Head.CFrame) end) end
-            
-            -- Dog Math: Torso horizontal, limbs tucked under
-            Torso.CFrame = hrp.CFrame * CFrame.new(0, -1.2, -2.5) * CFrame.Angles(math.rad(-90), 0, 0)
-            
-            if Head then 
-                Head.CFrame = Torso.CFrame * CFrame.new(0, 1.3, -0.2) * CFrame.Angles(math.rad(45), 0, 0) 
-            end
-            
-            -- Limbs as Paws
-            local LArm = SpamChar:FindFirstChild("Left Arm")
-            local RArm = SpamChar:FindFirstChild("Right Arm")
-            local LLeg = SpamChar:FindFirstChild("Left Leg")
-            local RLeg = SpamChar:FindFirstChild("Right Leg")
-            
-            if LArm then LArm.CFrame = Torso.CFrame * CFrame.new(-0.8, 0.5, 0.5) * CFrame.Angles(math.rad(90), 0, math.rad(20)) end
-            if RArm then RArm.CFrame = Torso.CFrame * CFrame.new(0.8, 0.5, 0.5) * CFrame.Angles(math.rad(90), 0, math.rad(-20)) end
-            if LLeg then LLeg.CFrame = Torso.CFrame * CFrame.new(-0.6, -1.2, 0.5) * CFrame.Angles(math.rad(90), 0, math.rad(10)) end
-            if RLeg then RLeg.CFrame = Torso.CFrame * CFrame.new(0.6, -1.2, 0.5) * CFrame.Angles(math.rad(90), 0, math.rad(-10)) end
-            
-            -- Disable collisions so they don't bounce
-            for _, p in pairs(SpamChar:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+            applyDogPose(target, liveTorso, liveHead, liveHumanoid, hrp, snoRemote)
         end)
     end
 
     KeybindsGroup:CreateKeybind({
-        Name = "Dog Pose Quick V1",
+        Name = "Dog Pose Quick",
         Flag = "DogPoseKey",
         Default = "T",
         Callback = function()
-            if loopGrabDogActive then
-                stopDogPose()
-            else
-                startDogPose()
+            local newState = not dogState.Active
+            if SetToggleState then
+                SetToggleState("LoopGrab_Dog", newState)
             end
-        end
-    })
-end
-    -- Auto-bind for T (Spam keybind) within KeybindsGroup
-    KeybindsGroup:CreateKeybind({
-        Name = "Dog Pose Quick V2",
-        Flag = "DogPoseKey",
-        Default = "T",
-        Callback = function()
-            local newState = not loopGrabDogActive
-            SetToggleState("LoopGrab_Dog", newState)
-            
-            -- If you want the toggle visually updated in the UI, you may need to call Options["LoopGrab_Dog"]:Set(newState) depending on your UI library.
-            
+
             if newState then
                 startDogPose()
             else
                 stopDogPose()
-                Library:Notify({ Title = "Dog Pose", Content = "Deactivated", Duration = 3 })
+                if Library and Library.Notify then
+                    Library:Notify({ Title = "Dog Pose", Content = "Deactivated", Duration = 3 })
+                end
             end
         end
-    })
-end
+    });
+end;
+xocoDogPoseQuickFix();
+
 do
     -- // Block Setup \\ --
     local FigureMain = Tabs.Grab:CreateBlock({Name = "Figure Grab Main", Side = "Left"})

@@ -1,19 +1,27 @@
 -- NNHUB_RERUN_CLEANUP_V1: disconnect previous run connections before creating a new UI/session.
+local state = getgenv and getgenv() or _G
 do
-    local state = getgenv and getgenv() or _G
     if state.NNHUB_RERUN_CLEANUP_V1 and state.NNHUB_RERUN_CLEANUP_V1.Disconnect then
         pcall(function() state.NNHUB_RERUN_CLEANUP_V1:Disconnect() end)
     end
-    state.NNHUB_RERUN_CLEANUP_V1 = { Connections = {} }
+    state.NNHUB_RERUN_CLEANUP_V1 = { Connections = {}, Threads = {} }
     function state.NNHUB_RERUN_CLEANUP_V1:Track(connection)
         if connection then table.insert(self.Connections, connection) end
         return connection
+    end
+    function state.NNHUB_RERUN_CLEANUP_V1:TrackThread(thread)
+        if thread then table.insert(self.Threads, thread) end
+        return thread
     end
     function state.NNHUB_RERUN_CLEANUP_V1:Disconnect()
         for _, connection in ipairs(self.Connections) do
             pcall(function() if connection and connection.Disconnect then connection:Disconnect() end end)
         end
+        for _, thread in ipairs(self.Threads) do
+            pcall(function() task.cancel(thread) end)
+        end
         table.clear(self.Connections)
+        table.clear(self.Threads)
     end
 end
 
@@ -173,7 +181,8 @@ end
         end)
         task.spawn(FindPCLD)
         hrp.CFrame = hrp.CFrame * CFrame.new(0,1,0)
-        FWD(hrp,"Scream"):Destroy()
+        local scream = FWD(hrp,"Scream",1)
+        if scream then scream:Destroy() end
     end
     local function toy_delete(toy) DestroyToy:FireServer(toy) end
     local function sno(part) SetNetworkOwner:FireServer(part,part.CFrame) end
@@ -191,8 +200,8 @@ end
             local Head = Root.Parent and Root.Parent:FindFirstChild("Head")
             return Head and CheckNetworkOwnerOnPart(Head)
         else 
-            TargetChar = TargetPlr.Character
-            TargetRoot = TargetChar and TargetChar.Parent and TargetChar:FindFirstChild("Head")
+            local TargetChar = TargetPlr and TargetPlr.Character
+            local TargetRoot = TargetChar and TargetChar.Parent and TargetChar:FindFirstChild("Head")
             return TargetRoot and CheckNetworkOwnerOnPart(TargetRoot)
         end
     end
@@ -484,20 +493,20 @@ end
                                         decoyHRP.Position.Y - 4,
                                         decoyHRP.Position.Z
                                     )
-                                    task.wait(0.0001)
+                                    wait(0.0001)
                                     BodyPosition.Position = Vector3.new(
                                         decoyHRP.Position.X,
                                         decoyHRP.Position.Y + 3,
                                         decoyHRP.Position.Z
                                     )
-                                    task.wait(0.0001)
+                                    wait(0.0001)
                                 until not bool.ShurikenLagServerT or not shuriken.Parent or not decoy.Parent
                             end)
                         end
-                        task.wait()
+                        wait()
                     end
                 end
-                task.wait()
+                wait()
             end
         end
     end
@@ -2263,8 +2272,8 @@ end
         if bool.WalkSpeed then
             cons["WS"] = RunService.Stepped:Connect(function()
                 if plr and plr.Character and plr.Character:FindFirstChild('HumanoidRootPart') and plr.Character:FindFirstChildOfClass('Humanoid') and typeof(_G.WalkspeedValue) == 'number' then
-                    h = plr.Character.HumanoidRootPart
-                    u = plr.Character:FindFirstChildOfClass('Humanoid')
+                    local h = plr.Character.HumanoidRootPart
+                    local u = plr.Character:FindFirstChildOfClass('Humanoid')
                     h.CFrame = h.CFrame + u.MoveDirection * ((16 * _G.WalkspeedValue) / 10)
                 end
             end)
@@ -2499,10 +2508,7 @@ end
                     RemoveESP(v)
                 end
                 
-                if PCLD_ESP_CON then
-                    PCLD_ESP_CON:Disconnect()
-                    PCLD_ESP_CON = nil
-                end
+                cons:disc("PCLD_ESP_CON")
             end
         end
     })
@@ -3297,7 +3303,7 @@ TarTab:AddButton({
                 table.insert(shurikens1, StickyPart)
             end
             for _, shuriken in ipairs(shurikens1) do
-                StickyPartEvent:FireServer(
+                StickyEvent:FireServer(
                     shuriken,
                     targetinv.CreatureBlobman.Head,
                     CFrame.new(0,3,0,0,0,0,0,0,0,0,0,0)
@@ -3442,6 +3448,7 @@ TarTab:AddButton({
                     etc.TargetPLR = selectedPlrName and game.Players:FindFirstChild(selectedPlrName)
                     etc.Head = etc.TargetPLR and etc.TargetPLR.Character and etc.TargetPLR.Character:FindFirstChild("Head")
                     etc.Root = etc.TargetPLR and etc.TargetPLR.Character and etc.TargetPLR.Character:FindFirstChild("HumanoidRootPart")
+                    local BodyPos
                     local Pallete = inv:FindFirstChild("RagdollPalete")
                     local function SpawnPallete()
                         Pallete = SpawnToy("PalletLightBrown")
@@ -4017,7 +4024,7 @@ TarTab:AddButton({
                         v:Destroy()
                     end
                 end
-                BodyPos = Instance.new("BodyPosition")
+                local BodyPos = Instance.new("BodyPosition")
                 BodyPos.Name = "KickBodyPos1"
                 BodyPos.MaxForce = Vector3.new(Huge())
                 BodyPos.Position = oldCF.Position + Vector3.new(0,25,0)
@@ -4200,7 +4207,7 @@ TarTab:AddButton({
                 Part2.CFrame = CFrame.new(-999999999999, 9999999999999, -999999999999)
             end
         end
-        BV = Instance.new("BodyVelocity")
+        local BV = Instance.new("BodyVelocity")
         BV.Velocity = Vector3.new(0, 99999999999, 0)
         BV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         BV.P = 100000075
@@ -4211,12 +4218,11 @@ TarTab:AddButton({
         Humanoid:ChangeState(Enum.HumanoidStateType.Dead)
         task.delay(2, function()
             if BV and BV.Parent then BV:Destroy() end
-            BV = nil
         end)
     end
 
     function _G.ReturnToSavedPosition()
-        Char = Players.LocalPlayer.Character
+        local Char = Players.LocalPlayer.Character
         if Char and Char:FindFirstChild("HumanoidRootPart") and _G.SavedCFrame then
             Char:PivotTo(_G.SavedCFrame)
         end
@@ -4226,13 +4232,13 @@ TarTab:AddButton({
         if not _G.LoopKill or not Player or not Player.Character then return end
         if Workspace.PlotItems.PlayersInPlots:FindFirstChild(Player.Name) then return end
 
-        Char = Player.Character
-        Root = Char:FindFirstChild("HumanoidRootPart")
-        Head = Char:FindFirstChild("Head")
-        Humanoid = Char:FindFirstChild("Humanoid")
+        local Char = Player.Character
+        local Root = Char:FindFirstChild("HumanoidRootPart")
+        local Head = Char:FindFirstChild("Head")
+        local Humanoid = Char:FindFirstChild("Humanoid")
         if not (Root and Head and Humanoid) or Humanoid.Health <= 0 or _G.IsAboveLimit(Player) then return end
 
-        SelfChar = Players.LocalPlayer.Character
+        local SelfChar = Players.LocalPlayer.Character
         if not SelfChar or not SelfChar:FindFirstChild("HumanoidRootPart") then return end
 
         pcall(function()
@@ -4253,13 +4259,13 @@ TarTab:AddButton({
     end
 
     function _G.LoopKillFunction()
-        Char = Players.LocalPlayer.Character
+        local Char = Players.LocalPlayer.Character
         if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
         _G.SavedCFrame = Char:GetPivot()
 
         if not _G.LoopKill then return end
-        Player = Players:FindFirstChild(selectedPlrName)
-        if Player then  
+        local Player = Players:FindFirstChild(selectedPlrName)
+        if Player then
             _G.ExecuteKill(Player)
         end
 
@@ -4538,7 +4544,7 @@ TarTab:AddButton({
     Gui.Parent = game.CoreGui
     Gui.Enabled = false
 
-    Button = Instance.new("ImageButton")
+    local Button = Instance.new("ImageButton")
     Button.Size = UDim2.new(0, 80, 0, 80)
     Button.Position = UDim2.new(1, -267, 1, -90)
     Button.Image = "rbxassetid://97166444"
@@ -4546,14 +4552,14 @@ TarTab:AddButton({
     Button.ImageTransparency = 0.5
     Button.Parent = Gui
 
-    Label = Instance.new("ImageLabel")
+    local Label = Instance.new("ImageLabel")
     Label.Size = UDim2.new(0.8, 0, 0.8, 0)
     Label.Position = UDim2.new(0.1, 0, 0.1, 0)
     Label.Image = "rbxassetid://6723742952"
     Label.BackgroundTransparency = 1
     Label.Parent = Button
 
-    Button.MouseButton1Click:Connect(function()
+    state.NNHUB_RERUN_CLEANUP_V1:Track(Button.MouseButton1Click:Connect(function()
         if bool.TeleportKeybind then
             local MouseTarget = mouse and mouse.Target
             if MouseTarget then 
@@ -4561,7 +4567,7 @@ TarTab:AddButton({
                 hrp.CFrame = mouse.Hit * CFrame.new(0,5,0)
             end
         end
-    end)
+    end))
 
     Toggles["EnableTeleport"] =  KeybindTab:AddToggle({
         Name = "Enable Teleport Keybind",
@@ -4636,7 +4642,11 @@ TarTab:AddButton({
             for _,v in item:GetChildren() do
                 if HasProperty(v, "CanQuery") and v.CanQuery and v.CanTouch then PartToGrab = v break end
             end
-            if item:FindFirstChild("HumanoidCreature", true) then item:FindFirstChild("HumanoidCreature", true).Sit = true item:FindFirstChild("HumanoidCreature", true).PlatformStand = true Grab(item.LeftDetector) end
+            local creatureHumanoid = item:FindFirstChild("HumanoidCreature", true)
+            if creatureHumanoid then
+                creatureHumanoid.Sit = true
+                creatureHumanoid.PlatformStand = true
+            end
             sno(PartToGrab)
             task.wait(0.2)
             local Camera = workspace.CurrentCamera
@@ -5279,7 +5289,7 @@ TarTab:AddButton({
 
     local oldFiles = {}
 
-    coroutine.wrap(function()
+    state.NNHUB_RERUN_CLEANUP_V1:TrackThread(task.spawn(function()
         while task.wait(1) do
             local newFiles = GetFiles()
             
@@ -5288,9 +5298,9 @@ TarTab:AddButton({
                 oldFiles = newFiles
             end
         end
-    end)()
+    end))
 
-    task.delay(2,function()
+    state.NNHUB_RERUN_CLEANUP_V1:TrackThread(task.delay(2,function()
         local StartTick = tick()
         local Character,Root
         while task.wait(0.025) do
@@ -5328,7 +5338,7 @@ TarTab:AddButton({
                 -- бла бла канец 
             end
         end
-    end)
+    end))
 
     int.LastKunaiSource = nil
     _G.TryAntiFling = false

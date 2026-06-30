@@ -6,13 +6,19 @@ Merged, hardened private-test Roblox hub for the grab/fling game family. Built f
 
 - `NomNom.lua` - the full merged hub (single file).
 - `Loader.lua` - thin loader that `HttpGet`s `NomNom.lua` from raw.
+- `PackLoader.lua` - standalone 3-button UI that loads each script pack
+  separately (Wourld / NoName / XOCO) instead of the merged hub.
 - `SOURCE_COMPARISON.md` - per-script comparison + merge rationale.
 - `SOURCE_INVENTORY.md` - raw feature counts.
-- `_fixed_sources/` - the 4 original scripts after syntax fixes.
+- `_fixed_sources/` - the individual script packs (fixed), served by PackLoader.
 
 ## Usage
 
-Run `Loader.lua` in your executor, or paste `NomNom.lua` directly. UI toggle key: **Right Shift**.
+Merged hub: run `Loader.lua` or paste `NomNom.lua` directly. UI toggle key: **Right Shift**.
+
+Individual packs: run `PackLoader.lua` for a small window with three buttons -
+**Load Wourld**, **Load NoName**, **Load XOCO** - each fetches and runs that
+single pack from the repo. Draggable window, close button, rerun-safe.
 
 ## Notes
 
